@@ -1,0 +1,70 @@
+plugins {
+	id 'java-library'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'kr.co.prosafe'
+version = '0.0.1-SNAPSHOT'
+description = 'core'
+
+sourceSets {
+	main {
+		resources {
+			srcDir 'src/main/resources'
+		}
+	}
+}
+
+// XML 파일 복사를 별도 태스크로 분리
+tasks.register('copyMapperXml', Copy) {
+	from 'src/main/java/kr/co/prosafe/core/mapper'
+	into 'build/resources/main/kr/co/prosafe/core/mapper'
+	include '**/*.xml'
+}
+
+processResources.dependsOn copyMapperXml
+
+// 중복 파일 처리 전략 설정
+tasks.withType(Copy) {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencyManagement {
+	imports {
+		mavenBom 'org.springframework.boot:spring-boot-dependencies:3.5.5'
+	}
+}
+
+dependencies {
+	// spring framework (without boot)
+	api 'org.springframework:spring-context'
+	api 'org.springframework:spring-tx'
+	api 'org.springframework:spring-jdbc'
+
+	// mybatis
+	api 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
+	api 'com.mysql:mysql-connector-j'
+
+	// lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// test
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.register("prepareKotlinBuildScriptModel"){}
+tasks.named('test') {
+	useJUnitPlatform()
+}

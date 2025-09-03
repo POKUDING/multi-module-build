@@ -1,0 +1,21 @@
+spring:
+  batch:
+    job:
+      enabled: false  # 애플리케이션 시작 시 자동 Job 실행 비활성화
+    jdbc:
+      initialize-schema: always  # Spring Batch 테이블 자동 생성
+  application:
+    name: batch
+  datasource:
+    url: jdbc:h2:mem:batchdb  # H2 인메모리 데이터베이스
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true  # H2 콘솔 활성화 (디버깅용)
+
+logging:
+  level:
+    kr.co.prosafe.batch: DEBUG
+    org.springframework.batch: INFO

@@ -1,0 +1,6 @@
+rootProject.name = 'pro-safety'
+
+include 'api'
+include 'admin'
+include 'batch'
+include 'core'

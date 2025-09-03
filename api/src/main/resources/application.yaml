@@ -1,0 +1,10 @@
+server:
+  port: 8080
+spring:
+  profiles:
+    active: local
+  application:
+    name: api
+  config:
+    import:
+      - "classpath:application-core.yaml"

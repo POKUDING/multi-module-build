@@ -1,0 +1,11 @@
+server:
+  port: 8081  # API(8080)와 다른 포트 사용
+spring:
+  profiles:
+    active: local
+  application:
+    name: batch
+  config:
+    import:
+      - "classpath:application-core.yaml"
+      - "classpath:application-batch.yaml"
