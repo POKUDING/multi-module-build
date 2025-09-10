@@ -1,0 +1,48 @@
+spring:
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # AWS RDS 엔드포인트로 변경하세요
+    jdbc-url: jdbc:mysql://your-rds-endpoint:3306/prosafe_db
+    username: admin
+    password: your-db-password
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+# 각 모듈별 포트 설정 (Docker에서는 모두 8080으로 실행)
+server:
+  port: 8080
+
+# 로깅 설정
+logging:
+  level:
+    kr.co.prosafe: INFO
+    org.springframework: INFO
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Actuator 설정 (헬스체크용)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# AWS 설정 (필요시)
+cloud:
+  aws:
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false

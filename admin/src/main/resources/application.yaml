@@ -2,7 +2,7 @@ server:
   port: 8082  # API(8080), Batch(8081)와 다른 포트 사용
 spring:
   profiles:
-    active: local
+    active: dev
   application:
     name: admin
   config:
