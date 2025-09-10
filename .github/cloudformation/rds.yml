@@ -69,7 +69,7 @@ Resources:
       Engine: mysql
       PubliclyAccessible: true
       DBInstanceClass: db.t3.micro
-      EngineVersion: 8.0.35
+      EngineVersion: 8.0.42
       DBParameterGroupName: default.mysql8.0
       Port: 3306
       DBName: prosafe
