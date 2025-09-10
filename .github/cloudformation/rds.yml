@@ -24,8 +24,8 @@ Resources:
       VpcId: {'Fn::ImportValue': !Sub '${ProjectName}-${ENV}-VPC'}
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 5432
-          ToPort: 5432
+          FromPort: 3306
+          ToPort: 3306
           CidrIp: 0.0.0.0/0
 
   # DEV
@@ -66,18 +66,20 @@ Resources:
       DBInstanceIdentifier: !Sub '${ProjectName}-${ENV}-db-instance'
       AllocatedStorage: 20 # 기본 50
       DBSubnetGroupName: !Ref RDSSubnetGroupDev
-      Engine: postgres
+      Engine: mysql
       PubliclyAccessible: true
-      DBInstanceClass: db.t3.micro # 기본 db.t4g.small
-      EngineVersion: 15.4
-      DBParameterGroupName: default.postgres15
-      Port: 5432
+      DBInstanceClass: db.t3.micro
+      EngineVersion: 8.0.35
+      DBParameterGroupName: default.mysql8.0
+      Port: 3306
       DBName: !Ref ProjectName
       MasterUsername: !Join [ '', [ '{{resolve:secretsmanager:', !Ref RDSSecretDev, ':SecretString:username}}' ] ]
       MasterUserPassword: !Join [ '', [ '{{resolve:secretsmanager:', !Ref RDSSecretDev, ':SecretString:password}}' ] ]
       VPCSecurityGroups: [ !GetAtt SecurityGroup.GroupId ]
       EnableCloudwatchLogsExports:
-        - postgresql
+        - error
+        - general
+        - slow-query
 
 #  # PROD
 #  RDSSecret:
