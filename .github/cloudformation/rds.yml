@@ -79,7 +79,7 @@ Resources:
       EnableCloudwatchLogsExports:
         - error
         - general
-        - slow-query
+        - slowquery
 
 #  # PROD
 #  RDSSecret:
