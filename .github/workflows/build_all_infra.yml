@@ -173,28 +173,29 @@ jobs:
             ProjectName=${{ needs.set_environment.outputs.project_name }},
             ENV=${{ inputs.env }}
 
-  build_rds:
-    runs-on: ubuntu-latest
-    needs: [ set_environment, build_vpc ]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-northeast-2
-
-      - name: Build RDS
-        uses: aws-actions/aws-cloudformation-github-deploy@v1
-        with:
-          name: ${{ needs.set_environment.outputs.project_name }}-${{ inputs.env }}-rds
-          template: .github/cloudformation/rds.yml
-          parameter-overrides: >-
-            ProjectName=${{ needs.set_environment.outputs.project_name }},
-            ENV=${{ inputs.env }}
+# RDS는 일시적으로 비활성화 (멀티모듈 테스트 우선)
+#  build_rds:
+#    runs-on: ubuntu-latest
+#    needs: [ set_environment, build_vpc ]
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v1
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-region: ap-northeast-2
+#
+#      - name: Build RDS
+#        uses: aws-actions/aws-cloudformation-github-deploy@v1
+#        with:
+#          name: ${{ needs.set_environment.outputs.project_name }}-${{ inputs.env }}-rds
+#          template: .github/cloudformation/rds.yml
+#          parameter-overrides: >-
+#            ProjectName=${{ needs.set_environment.outputs.project_name }},
+#            ENV=${{ inputs.env }}
 
   build_s3:
     runs-on: ubuntu-latest
