@@ -1,0 +1,145 @@
+name: Build ECS
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Environment
+        type: choice
+        required: true
+        options:
+          - prod
+          - dev
+
+jobs:
+  set_environment:
+    runs-on: ubuntu-latest
+    outputs:
+      project_name: ${{ steps.set_environment.outputs.project_name }}
+      project_env: ${{ steps.set_environment.outputs.project_env }}
+    steps:
+      - id: set_environment
+        name: Set Environment
+        run: |
+          echo "project_name=$(echo "${{ github.repository }}" | sed "s|${{ github.repository_owner }}\/||g" | sed "s|-spring||g")" >> $GITHUB_OUTPUT
+
+  create_repository:
+    runs-on: ubuntu-latest
+    needs: [ set_environment ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Create Repositories
+        continue-on-error: true
+        run: |
+          aws ecr create-repository --region ap-northeast-2 --repository-name ${{ needs.set_environment.outputs.project_name }}-admin
+          aws ecr create-repository --region ap-northeast-2 --repository-name ${{ needs.set_environment.outputs.project_name }}-api
+          aws ecr create-repository --region ap-northeast-2 --repository-name ${{ needs.set_environment.outputs.project_name }}-batch
+
+  deploy_backend_image:
+    runs-on: ubuntu-latest
+    needs: [ set_environment, create_repository ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # JAVA setting for build
+      - name: Set Up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Spring .yml file copy for each module
+      - name: Copy Spring .yml files
+        env:
+          CREATE_SECRET: ${{secrets.APPLICATION_DEV_YML}}
+        run: |
+          mkdir -p admin/src/main/resources
+          mkdir -p api/src/main/resources
+          mkdir -p batch/src/main/resources
+          echo $CREATE_SECRET | base64 --decode > admin/src/main/resources/application-dev.yml
+          echo $CREATE_SECRET | base64 --decode > api/src/main/resources/application-dev.yml
+          echo $CREATE_SECRET | base64 --decode > batch/src/main/resources/application-dev.yml
+
+      # application build
+      - name: Build with Gradle
+        run: ./gradlew build -x test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # set docker buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build & Push images for each module
+      - name: Build & Push Admin Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./admin
+          push: true
+          tags: >-
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.set_environment.outputs.project_name }}-admin:${{ inputs.env }},
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.set_environment.outputs.project_name }}-admin:${{ github.sha }}
+      
+      - name: Build & Push API Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./api
+          push: true
+          tags: >-
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.set_environment.outputs.project_name }}-api:${{ inputs.env }},
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.set_environment.outputs.project_name }}-api:${{ github.sha }}
+      
+      - name: Build & Push Batch Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./batch
+          push: true
+          tags: >-
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.set_environment.outputs.project_name }}-batch:${{ inputs.env }},
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.set_environment.outputs.project_name }}-batch:${{ github.sha }}
+
+  build_ecs:
+    runs-on: ubuntu-latest
+    needs: [ set_environment, deploy_backend_image ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Build ECS
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: ${{ needs.set_environment.outputs.project_name }}-${{ inputs.env }}-ecs
+          template: .github/cloudformation/ecs.yml
+          capabilities: CAPABILITY_NAMED_IAM
+          parameter-overrides: >-
+            ProjectName=${{ needs.set_environment.outputs.project_name }},
+            ENV=${{ inputs.env }}
