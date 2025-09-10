@@ -36,7 +36,7 @@ Resources:
       Name: !Sub '${ProjectName}/${ENV}/db'
       GenerateSecretString:
         RequireEachIncludedType: True
-        SecretStringTemplate: !Sub '{"username": "${ProjectName}"}'
+        SecretStringTemplate: '{"username": "admin"}'
         GenerateStringKey: 'password'
         PasswordLength: 30
         ExcludeCharacters: '"@/\&;='
@@ -72,7 +72,7 @@ Resources:
       EngineVersion: 8.0.35
       DBParameterGroupName: default.mysql8.0
       Port: 3306
-      DBName: !Ref ProjectName
+      DBName: prosafe
       MasterUsername: !Join [ '', [ '{{resolve:secretsmanager:', !Ref RDSSecretDev, ':SecretString:username}}' ] ]
       MasterUserPassword: !Join [ '', [ '{{resolve:secretsmanager:', !Ref RDSSecretDev, ':SecretString:password}}' ] ]
       VPCSecurityGroups: [ !GetAtt SecurityGroup.GroupId ]
@@ -89,7 +89,7 @@ Resources:
 #      Name: !Sub '${ProjectName}/${ENV}/db'
 #      GenerateSecretString:
 #        RequireEachIncludedType: True
-#        SecretStringTemplate: !Sub '{"username": "${ProjectName}"}'
+#        SecretStringTemplate: '{"username": "admin"}'
 #        GenerateStringKey: 'password'
 #        PasswordLength: 30
 #        ExcludeCharacters: '"@/\&;='
